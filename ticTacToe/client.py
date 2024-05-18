@@ -40,7 +40,7 @@ def check():
             else:
                 winner = 2
     if winner != -1:
-        messagebox.showinfo(title="Game over " , message="Player " + str(winner))                
+        messagebox.showinfo(title="Game over " , message="Player " + str(winner)+" won")                
         page.destroy()
     if count == 9:
         messagebox.showinfo(title="Game over " , message="tie")                
@@ -70,7 +70,7 @@ def onclick(i , j):
         session.send((str(i) + str(j)).encode())
         btns[i*3+j]['text'] = "O"
         check()
-        Thread(fromServer())
+        Thread(target=fromServer).start()
     
 page = Tk()
 page.title("Player O")

@@ -111,7 +111,7 @@ def new_client(session):
         sleep(60)
         send_data_to_client(session , "")
         session.close()
-        
+
 clients = 0
 s.listen()
 while True:
