@@ -13,7 +13,7 @@ products_list = [ "product 1" , "product 2" , "product 3", "product 4", "product
 products_quantity = [100 , 10 , 5 ,6 , 5 ,3 ,1]
 products_price = [2 , 50 , 53 , 200 , 500, 300 , 2000]
 available = len(products_list)
-
+lock = Lock()
 def get_data_from_client(session):
     client_type = "a"
     while client_type == 'a':
@@ -23,10 +23,12 @@ def get_data_from_client(session):
 def send_data_to_client(session , data):
     session.send(data.encode())
 
+
 def new_client(session):
     global products_list
     global products_quantity
     global products_price
+    global lock
     global available # Number of available products
     products_count = len(products_list) # Number of all products on system 
     try:    
@@ -66,11 +68,14 @@ def new_client(session):
         while True:
             send_data_to_client(session , "Number of product you want to buy :")
             want = int(get_data_from_client(session))
+            if(want > len(products_list)):
+                print("sorry we don't have this item")
+                continue
             want -= 1
             send_data_to_client(session , "How many do you want ? :")
             wanted_quantity = int(get_data_from_client(session))
             wanted[want] += wanted_quantity
-            if(products_quantity[want] < wanted[want]):
+            if(products_quantity[want]):
                 send_data_to_client(session , "Sorry we do not have this quantity")
                 wanted[want] -= wanted_quantity
             send_data_to_client(session , "Would you like to add another item y/n")
@@ -90,21 +95,22 @@ def new_client(session):
         if(ans != 'y'):
             send_data_to_client(session , ("Thank you for visiting us " + client_name))
             return
-        ok = True
-        for i in range(products_count):
-            if(products_quantity[i] < wanted[i]):
-                ok = False
-        
-        if ok:
+        # Check if no other client bought the items before confirmation , as a critical section
+        with lock:
+            ok = True
             for i in range(products_count):
-                if(wanted[i] != 0):
-                    products_quantity[i] -= wanted[i]
-                    if products_quantity[i] == 0:
-                        available -=1
-            send_data_to_client(session , ("Your order will arrive to "+ client_address + " in 3 working days.\n thank you for using our service " + client_name))
-        else:
-            send_data_to_client(session , ("Sorry " + client_name +  " another client took this item , see you soon"))
-        
+                if(products_quantity[i] < wanted[i]):
+                    ok = False
+            
+            if ok:
+                for i in range(products_count):
+                    if(wanted[i] != 0):
+                        products_quantity[i] -= wanted[i]
+                        if products_quantity[i] == 0:
+                            available -=1
+                send_data_to_client(session , ("Your order will arrive to "+ client_address + " in 3 working days.\n thank you for using our service " + client_name))
+            else:
+                send_data_to_client(session , ("Sorry " + client_name +  " another client took this item , see you soon"))
     except:
         send_data_to_client(session , "A problem occured please try again later")
     finally:
